@@ -16,8 +16,10 @@ class IngestionMetrics:
         self.unique_passages = {}
         
         # Chunks telemetry
-        self.chunk_token_counts = []
-        
+        self.chunk_count = 0
+        self.chunk_token_sum = 0
+        self.chunk_token_max = 0
+
         # Embedding telemetry
         self.embedding_start = None
         self.embedding_time = 0.0
@@ -46,31 +48,23 @@ class IngestionMetrics:
             self.embedding_start = None
 
     def record_chunk(self, token_count: int):
-        self.chunk_token_counts.append(token_count)
+        self.chunk_count += 1
+        self.chunk_token_sum += token_count
+        if token_count > self.chunk_token_max:
+            self.chunk_token_max = token_count
 
     def get_chunk_stats(self) -> Dict[str, Any]:
         """Calculates token counts distributions."""
-        if not self.chunk_token_counts:
+        if self.chunk_count == 0:
             return {"count": 0, "avg": 0, "med": 0, "max": 0}
             
-        sorted_tokens = sorted(self.chunk_token_counts)
-        n = len(sorted_tokens)
-        
-        avg_tokens = sum(sorted_tokens) / n
-        
-        # Median calculation
-        if n % 2 == 1:
-            med_tokens = sorted_tokens[n // 2]
-        else:
-            med_tokens = (sorted_tokens[n // 2 - 1] + sorted_tokens[n // 2]) / 2.0
-            
-        max_tokens = sorted_tokens[-1]
+        avg_tokens = self.chunk_token_sum / self.chunk_count
         
         return {
-            "count": n,
+            "count": self.chunk_count,
             "avg": round(avg_tokens, 2),
-            "med": round(med_tokens, 2),
-            "max": max_tokens
+            "med": "N/A", # Dropped exact median to save memory for large runs
+            "max": self.chunk_token_max
         }
 
     def finalize(self):

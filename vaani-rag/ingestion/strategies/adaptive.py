@@ -41,17 +41,9 @@ def chunk_adaptive(
             c.strategy = "adaptive"
         return chunks
         
-    # Rule 4: Very Long Passage -> Semantic or Fallback Fixed overlap
+    # Rule 4: Very Long Passage -> Fallback Fixed overlap
     else:
-        if embed_fn is not None:
-            chunks = chunk_semantic(
-                passage, 
-                embed_fn=embed_fn, 
-                distance_threshold=distance_threshold, 
-                target_size=384
-            )
-        else:
-            chunks = chunk_fixed_overlap(passage, chunk_size=384, chunk_overlap=128)
+        chunks = chunk_fixed_overlap(passage, chunk_size=384, chunk_overlap=128)
             
         for c in chunks:
             c.strategy = "adaptive"

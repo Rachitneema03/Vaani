@@ -54,7 +54,7 @@ def chunk_sentence(passage: Passage, target_size: int = 384, min_size: int = 64)
     for idx, chunk_txt in enumerate(chunks_text):
         t_count = count_tokens(chunk_txt)
         chunk_hash = hashlib.sha256(chunk_txt.encode("utf-8")).hexdigest()
-        chunk_id = f"{passage.language}_sentence_{chunk_hash[:16]}_{idx}"
+        chunk_id = f"{passage.language}_{chunk_hash}"
         
         chunks.append(
             Chunk(

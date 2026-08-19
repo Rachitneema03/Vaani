@@ -15,21 +15,15 @@ def chunk_original(passage: Passage) -> List[Chunk]:
     # BGE-M3 maximum sequence length is 8192.
     if token_count > 8192:
         logger.warning(
-            f"Passage {passage.passage_id} has {token_count} tokens which exceeds the safe model limit of 8192. Truncating."
+            f"Passage {passage.passage_id} has {token_count} tokens which exceeds the safe model limit of 8192. Routing to fixed-overlap."
         )
-        # Simple truncation for ORIGINAL strategy if it exceeds max model length
-        # (ponytail principle: simple, correct fallback)
-        tokenizer = get_tokenizer()
-        if tokenizer is not None:
-            tokens = tokenizer.encode(text, add_special_tokens=False)[:8192]
-            text = tokenizer.decode(tokens)
-            token_count = len(tokens)
-        else:
-            text = text[:32000] # Rough character fallback
-            token_count = 8192
+        # Use fixed-overlap for oversized passages
+        from ingestion.strategies.fixed_overlap import chunk_fixed_overlap
+        # Apply fixed overlap with 4000 token chunk size, 200 overlap to be safe and preserve content
+        return chunk_fixed_overlap(passage, chunk_size=4000, chunk_overlap=200)
 
-    chunk_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
-    chunk_id = f"{passage.language}_original_{chunk_hash}_0"
+    chunk_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()
+    chunk_id = f"{passage.language}_{chunk_hash}"
     
     chunk = Chunk(
         chunk_id=chunk_id,

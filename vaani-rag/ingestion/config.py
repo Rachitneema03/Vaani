@@ -45,6 +45,7 @@ UPLOAD_TO_PINECONE = os.getenv("UPLOAD_TO_PINECONE", "false").lower() == "true"
 # Checkpointing & Upload settings
 CHECKPOINT_INTERVAL = int(os.getenv("CHECKPOINT_INTERVAL", "1000"))
 PINECONE_UPSERT_BATCH_SIZE = int(os.getenv("PINECONE_UPSERT_BATCH_SIZE", "100"))
+EMBED_UPLOAD_BATCH_SIZE = int(os.getenv("EMBED_UPLOAD_BATCH_SIZE", "64"))
 
 # Cost Safety Configuration
 CONFIRM_LARGE_UPLOAD = os.getenv("CONFIRM_LARGE_UPLOAD", "false").lower() == "true"

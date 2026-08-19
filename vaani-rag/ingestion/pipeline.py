@@ -31,7 +31,9 @@ def run_pipeline(
     """
     logger.info("Initializing VaaniRAG Offline Ingestion Pipeline...")
     metrics = IngestionMetrics()
-    dedup = Deduplicator()
+    
+    # Enable SQLite dedup for runs larger than the 100-row dry run
+    dedup = Deduplicator(use_sqlite=(max_rows > 100))
     
     # 1. Resumability Setup
     checkpoint = load_checkpoint()
@@ -136,6 +138,8 @@ def run_pipeline(
         )
         sys.exit(1)
 
+    batch_size = config.EMBED_UPLOAD_BATCH_SIZE
+    
     # 4. Pass 2: Batched Local Embedding, Validation, and Pinecone Upload
     if not embedder:
         embedder = BGEM3Embedder(config.EMBEDDING_MODEL, config.EMBEDDING_BATCH_SIZE)
@@ -145,31 +149,15 @@ def run_pipeline(
         pc_client = get_pinecone_client()
         pc_index = verify_and_get_index(pc_client, config.PINECONE_INDEX_NAME)
         
-    # Read chunk objects back from the local storage cache
-    all_chunks: List[Chunk] = []
     if chunks_file_path.exists():
-        with open(chunks_file_path, "r", encoding="utf-8") as f_in:
-            for line in f_in:
-                if line.strip():
-                    all_chunks.append(Chunk.model_validate_json(line))
-                    
-    # Group chunks by language namespace
-    chunks_by_lang: Dict[str, List[Chunk]] = {}
-    for c in all_chunks:
-        chunks_by_lang.setdefault(c.language, []).append(c)
+        logger.info("Pass 2: Streaming chunks for Embedding and Pinecone Upload")
+        current_batch: List[Chunk] = []
+        current_lang = None
         
-    for lang in languages:
-        lang_chunks = chunks_by_lang.get(lang, [])
-        if not lang_chunks:
-            continue
-            
-        logger.info(f"Pass 2: Embedding and validating language: '{lang}' (total chunks: {len(lang_chunks)})")
-        
-        batch_size = config.EMBEDDING_BATCH_SIZE
-        
-        for b_idx in range(0, len(lang_chunks), batch_size):
-            chunk_batch = lang_chunks[b_idx : b_idx + batch_size]
-            texts = [c.text for c in chunk_batch]
+        def process_batch(batch: List[Chunk], lang: str, offset: int):
+            if not batch:
+                return
+            texts = [c.text for c in batch]
             
             # Local Batch Embedding
             metrics.start_embedding()
@@ -179,25 +167,15 @@ def run_pipeline(
             # Validation Checks
             is_valid, err_reason = validate_embeddings(embeddings)
             if not is_valid:
-                logger.critical(f"FATAL: Vector validation failed for batch at offset {b_idx}: {err_reason}")
-                metrics.invalid_vectors += len(chunk_batch)
-                
-                # Check specifics for report
-                if "NaN" in err_reason:
-                    metrics.nan_vectors += len(chunk_batch)
-                elif "normalize" in err_reason:
-                    # Let's count it under invalid
-                    pass
-                elif "dimension" in err_reason:
-                    metrics.dimension_failures += len(chunk_batch)
-                    
+                logger.critical(f"FATAL: Vector validation failed for batch at offset {offset}: {err_reason}")
+                metrics.invalid_vectors += len(batch)
                 sys.exit(1)
                 
-            metrics.valid_vectors += len(chunk_batch)
+            metrics.valid_vectors += len(batch)
             
             # Build VectorRecords
             records = []
-            for c, emb in zip(chunk_batch, embeddings):
+            for c, emb in zip(batch, embeddings):
                 records.append(build_vector_record(c, emb))
                 
             # Pinecone upload
@@ -213,25 +191,71 @@ def run_pipeline(
                 metrics.upload_retries += upload_res["retries"]
                 metrics.upload_duration += upload_res["duration"]
                 
-            # Save progress checkpoints
-            if (metrics.valid_vectors % config.CHECKPOINT_INTERVAL) == 0:
-                save_checkpoint(
-                    dataset_name="ai4bharat/MSMARCO-XI",
-                    languages=languages,
-                    chunking_strategy=strategy,
-                    embedding_model=config.EMBEDDING_MODEL,
-                    embedding_dimension=embedder.dimension,
-                    rows_processed=rows_processed,
-                    passages_processed={lang: len(lang_chunks) for lang in languages}, # rough approximation
-                    chunks_processed=chunks_processed,
-                    vectors_uploaded={lang: metrics.uploaded_vectors for lang in languages},
-                    last_successful_batch={"lang": lang, "offset": b_idx}
-                )
+                if upload_res["failed"] > 0:
+                    logger.critical(f"FATAL: Pinecone upload failed for batch at offset {offset}. Keeping checkpoint.")
+                    # Keep checkpoint intact, mark run as failed (by exiting)
+                    sys.exit(1)
+                    
+            # Save progress checkpoint after every successful batch
+            save_checkpoint(
+                dataset_name="ai4bharat/MSMARCO-XI",
+                languages=languages,
+                chunking_strategy=strategy,
+                embedding_model=config.EMBEDDING_MODEL,
+                embedding_dimension=embedder.dimension,
+                rows_processed=rows_processed,
+                passages_processed=passages_processed,
+                chunks_processed=chunks_processed,
+                vectors_uploaded={lang: metrics.uploaded_vectors for lang in languages},
+                last_successful_batch={"lang": lang, "offset": offset}
+            )
+            dedup.commit()
+            
+        with open(chunks_file_path, "r", encoding="utf-8") as f_in:
+            offset = 0
+            # Read streaming to avoid memory issues
+            for line_num, line in enumerate(f_in):
+                if not line.strip():
+                    continue
+                    
+                chunk = Chunk.model_validate_json(line)
+                
+                # Check resumability based on checkpoint
+                # To be precise, we need to skip if we already processed this chunk.
+                # Since we don't have exact chunk offset in old checkpoint, we just process everything 
+                # but we could skip based on `chunks_processed`.
+                # For simplicity and ponytail mode, we rely on the first pass resume logic 
+                # or if we are re-running, it re-embeds unless we do exact matching.
+                # Actually, the instructions say "Do not re-embed the entire previous JSONL file after a restart."
+                # So we must skip already processed batches.
+                # Let's track chunks processed per language in pass 2.
+                
+                pass2_chunks_processed = checkpoint.get("vectors_uploaded", {}).get(chunk.language, 0) if checkpoint else 0
+                if offset < pass2_chunks_processed:
+                    offset += 1
+                    continue
+                
+                if current_lang != chunk.language:
+                    process_batch(current_batch, current_lang, offset)
+                    current_batch = []
+                    current_lang = chunk.language
+                    
+                current_batch.append(chunk)
+                
+                if len(current_batch) >= batch_size:
+                    process_batch(current_batch, current_lang, offset)
+                    offset += len(current_batch)
+                    current_batch = []
+                    
+            # Final batch
+            if current_batch:
+                process_batch(current_batch, current_lang, offset)
 
     metrics.finalize()
     
-    # 5. Clear checkpoint on full pipeline success
-    clear_checkpoint()
+    # 5. Clear checkpoint on full pipeline success ONLY if upload didn't fail
+    if metrics.failed_vectors == 0:
+        clear_checkpoint()
     
     # Print the exact requested Report Layout
     print_final_report(metrics, strategy, embedder, dry_run, upload)
