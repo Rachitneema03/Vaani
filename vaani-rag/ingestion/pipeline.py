@@ -71,46 +71,93 @@ def run_pipeline(
     lang_unique_counts = {lang: 0 for lang in languages}
 
     with open(chunks_file_path, write_mode, encoding="utf-8") as f_out:
-        for lang in languages:
-            skip_count = rows_processed.get(lang, 0)
-            logger.info(f"Processing language: '{lang}' (skipping first {skip_count} rows)")
+        from ingestion.dataset_loader import load_dataset_stream
+        
+        try:
+            stream = load_dataset_stream(split="train")
+        except Exception as e:
+            logger.error(f"Error loading stream: {e}")
+            sys.exit(1)
             
-            row_gen = get_row_generator(lang, max_rows, split="train", skip=skip_count)
+        global_skip = min(rows_processed.values()) if any(rows_processed.values()) else 0
+        if global_skip > 0:
+            logger.info(f"Skipping first {global_skip} rows based on checkpoint.")
+
+        hi_rows_seen = 0
+        mr_rows_seen = 0
+        
+        for idx, row in enumerate(stream):
+            if idx < global_skip:
+                continue
+                
+            current_row_idx = idx
+            target_lang_raw = str(row.get("target_lang", ""))
             
-            for idx, row in enumerate(row_gen):
-                current_row_idx = skip_count + idx
+            is_hi_row = target_lang_raw.startswith("hi_")
+            is_mr_row = target_lang_raw.startswith("mr_")
+            
+            if is_hi_row and "hi" in languages and hi_rows_seen < max_rows:
+                hi_rows_seen += 1
+            if is_mr_row and "mr" in languages and mr_rows_seen < max_rows:
+                mr_rows_seen += 1
+
+            hi_done = hi_rows_seen >= max_rows if "hi" in languages else True
+            mr_done = mr_rows_seen >= max_rows if "mr" in languages else True
+            en_done = lang_unique_counts.get("en", 0) >= max_rows if "en" in languages else True
+            
+            if hi_done and mr_done and en_done:
+                logger.info("Reached limits for all requested languages. Stopping stream.")
+                break
                 
-                # Extract
-                passages = list(extract_passages_from_row(row, lang, current_row_idx))
-                lang_passage_counts[lang] += len(passages)
-                
-                for p in passages:
-                    # Clean
-                    p_clean = clean_passage(p)
-                    if not p_clean:
-                        continue
-                        
-                    # Deduplicate
-                    if dedup.is_duplicate(p_clean):
-                        continue
-                        
-                    lang_unique_counts[lang] += 1
+            # Extract both English and Translated passages from the row
+            passages = list(extract_passages_from_row(row, current_row_idx))
+            
+            for p in passages:
+                lang = p.language
+                if lang not in languages:
+                    continue
                     
-                    # Chunk
-                    chunks = chunk_passage(
-                        p_clean, 
-                        strategy=strategy, 
-                        embed_fn=embedder.embed_texts if embedder else None
-                    )
+                # Enforcement of limits before processing
+                if lang == "en" and en_done:
+                    continue
+                if lang == "hi" and hi_rows_seen > max_rows:
+                    continue
+                if lang == "mr" and mr_rows_seen > max_rows:
+                    continue
                     
-                    for c in chunks:
-                        f_out.write(c.model_dump_json() + "\n")
-                        metrics.record_chunk(c.token_count)
-                        chunks_processed[lang] += 1
+                lang_passage_counts[lang] += 1
                 
-                # Update counters
-                rows_processed[lang] = current_row_idx + 1
-                lang_row_counts[lang] = rows_processed[lang]
+                p_clean = clean_passage(p)
+                if not p_clean:
+                    continue
+                    
+                # Global Deduplication
+                if dedup.is_duplicate(p_clean):
+                    continue
+                    
+                lang_unique_counts[lang] += 1
+                
+                chunks = chunk_passage(
+                    p_clean, 
+                    strategy=strategy, 
+                    embed_fn=embedder.embed_texts if embedder else None
+                )
+                
+                for c in chunks:
+                    f_out.write(c.model_dump_json() + "\n")
+                    metrics.record_chunk(c.token_count)
+                    chunks_processed[lang] += 1
+            
+            # Update counters for metrics/checkpoints
+            if not hi_done:
+                rows_processed["hi"] = current_row_idx + 1
+                lang_row_counts["hi"] = hi_rows_seen
+            if not mr_done:
+                rows_processed["mr"] = current_row_idx + 1
+                lang_row_counts["mr"] = mr_rows_seen
+            if not en_done:
+                rows_processed["en"] = current_row_idx + 1
+                lang_row_counts["en"] = current_row_idx + 1  # english tracks global row scan depth
 
     # Collect stats for metrics
     metrics.rows_processed = lang_row_counts
