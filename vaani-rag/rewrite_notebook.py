@@ -1,16 +1,14 @@
 import json
 
-with open('notebooks/msmarco_xi_ingestion_colab.ipynb', 'r', encoding='utf-8') as f:
-    nb = json.load(f)
-
+# Define the exact 12 cells specified in the requirements
 new_cells = [
     {
         "cell_type": "markdown",
         "metadata": {},
         "source": [
-            "# VaaniRAG Offline Ingestion Pipeline\n",
+            "# VaaniRAG Offline Ingestion Pipeline - Colab Environment\n",
             "\n",
-            "This notebook is the reproducible environment to run the pipeline."
+            "This notebook is the reproducible environment to run and verify the offline ingestion pipeline."
         ]
     },
     {
@@ -19,11 +17,27 @@ new_cells = [
         "metadata": {},
         "outputs": [],
         "source": [
-            "# Clone repository and cd into it\n",
-            "!git clone https://github.com/yashvyas101/Vaani.git || echo 'Already cloned'\n",
-            "%cd Vaani/vaani-rag\n",
-            "\n",
-            "# Install requirements\n",
+            "# CELL 1: Clone repository exactly once\n",
+            "!git clone https://github.com/yashvyas101/Vaani.git /content/Vaani || echo 'Already cloned'"
+        ]
+    },
+    {
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "# CELL 2: cd into vaani-rag\n",
+            "%cd /content/Vaani/vaani-rag"
+        ]
+    },
+    {
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "# CELL 3: install dependencies\n",
             "!pip install -r requirements.txt"
         ]
     },
@@ -33,10 +47,12 @@ new_cells = [
         "metadata": {},
         "outputs": [],
         "source": [
-            "# Verify T4 GPU\n",
+            "# CELL 4: verify GPU\n",
             "import torch\n",
-            "assert torch.cuda.is_available() and 'T4' in torch.cuda.get_device_name(0), 'Please enable a T4 GPU in Colab Runtime Settings'\n",
-            "print('T4 GPU is available')"
+            "if torch.cuda.is_available():\n",
+            "    print(f\"GPU is available: {torch.cuda.get_device_name(0)}\")\n",
+            "else:\n",
+            "    raise RuntimeError(\"No CUDA GPU exists for the GPU ingestion benchmark.\")"
         ]
     },
     {
@@ -45,11 +61,27 @@ new_cells = [
         "metadata": {},
         "outputs": [],
         "source": [
-            "# Load Secrets\n",
+            "# CELL 5: verify repository structure (Diagnostic Cell)\n",
             "import os\n",
-            "from google.colab import userdata\n",
-            "os.environ['PINECONE_API_KEY'] = userdata.get('PINECONE_API_KEY')\n",
-            "print('Loaded Pinecone API key')"
+            "import sys\n",
+            "sys.path.append(os.getcwd())\n",
+            "\n",
+            "import ingestion.dataset_loader\n",
+            "import ingestion.pipeline\n",
+            "\n",
+            "print(f\"Current working directory: {os.getcwd()}\")\n",
+            "print(f\"dataset_loader file path: {ingestion.dataset_loader.__file__}\")\n",
+            "print(f\"pipeline file path:       {ingestion.pipeline.__file__}\")\n",
+            "\n",
+            "# Verify the source paths to prevent nested copy execution issues\n",
+            "expected_path = os.path.abspath(os.path.join(os.getcwd(), 'ingestion', 'dataset_loader.py'))\n",
+            "actual_path = os.path.abspath(ingestion.dataset_loader.__file__).replace('.pyc', '.py')\n",
+            "\n",
+            "print(f\"Expected source path:     {expected_path}\")\n",
+            "print(f\"Actual source path:       {actual_path}\")\n",
+            "\n",
+            "assert actual_path == expected_path, \"Error: Executing wrong nested copy of the project!\"\n",
+            "print(\"Repository structure verification: SUCCESS\")"
         ]
     },
     {
@@ -58,7 +90,7 @@ new_cells = [
         "metadata": {},
         "outputs": [],
         "source": [
-            "# Inspect Dataset\n",
+            "# CELL 6: inspect dataset\n",
             "!python scripts/inspect_dataset.py"
         ]
     },
@@ -68,7 +100,7 @@ new_cells = [
         "metadata": {},
         "outputs": [],
         "source": [
-            "# Test BGE-M3\n",
+            "# CELL 7: test BGE-M3\n",
             "!python scripts/test_embedding.py"
         ]
     },
@@ -78,15 +110,101 @@ new_cells = [
         "metadata": {},
         "outputs": [],
         "source": [
-            "# 100 rows per language dry run\n",
+            "# CELL 8: run extraction-only smoke test\n",
+            "import sys\n",
+            "import os\n",
+            "sys.path.append(os.getcwd())\n",
+            "from ingestion.dataset_loader import load_dataset_stream\n",
+            "from ingestion.passage_extractor import extract_passages_from_row\n",
+            "\n",
+            "print(\"Loading dataset default stream...\")\n",
+            "stream = load_dataset_stream(split='train')\n",
+            "print(\"Extracting first 3 rows...\")\n",
+            "for idx, row in enumerate(stream):\n",
+            "    if idx >= 3:\n",
+            "        break\n",
+            "    passages = list(extract_passages_from_row(row, idx))\n",
+            "    print(f\"\\nRow {idx} metadata: target_lang='{row.get('target_lang')}', source_lang='{row.get('source_lang')}'\")\n",
+            "    print(f\"Extracted {len(passages)} passages:\")\n",
+            "    for p in passages:\n",
+            "        print(f\"  - [{p.language}] ID={p.passage_id[:30]}... Text={p.text[:60]}...\")\n",
+            "print(\"\\nExtraction smoke test PASSED\")"
+        ]
+    },
+    {
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "# CELL 9: run 10-row dry run\n",
+            "!python -m ingestion.pipeline --languages en,hi,mr --max-rows 10 --strategy adaptive --dry-run"
+        ]
+    },
+    {
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "# CELL 10: run 100-row dry run\n",
             "!python -m ingestion.pipeline --languages en,hi,mr --max-rows 100 --strategy adaptive --dry-run"
+        ]
+    },
+    {
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "# CELL 11: optional Pinecone connection test\n",
+            "import os\n",
+            "try:\n",
+            "    from google.colab import userdata\n",
+            "    api_key = userdata.get('PINECONE_API_KEY')\n",
+            "    if api_key:\n",
+            "        os.environ['PINECONE_API_KEY'] = api_key\n",
+            "        print(\"Loaded Pinecone API key from Colab secrets.\")\n",
+            "        from ingestion.pinecone_client import get_pinecone_client\n",
+            "        pc = get_pinecone_client()\n",
+            "        indexes = pc.list_indexes()\n",
+            "        print(f\"Successfully connected to Pinecone. Existing Indexes: {[idx.name for idx in indexes]}\")\n",
+            "    else:\n",
+            "        print(\"PINECONE_API_KEY not found in Colab secrets. Skipping connection test.\")\n",
+            "except Exception as e:\n",
+            "    print(f\"Pinecone connection test skipped: {e}\")"
+        ]
+    },
+    {
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "# CELL 12: optional Pinecone upload\n",
+            "# Run this cell only if you wish to upload vectors to Pinecone Cloud (requires PINECONE_API_KEY set)\n",
+            "!python -m ingestion.pipeline --languages en,hi,mr --max-rows 100 --strategy adaptive --upload"
         ]
     }
 ]
 
-nb['cells'] = new_cells
+nb = {
+    "cells": new_cells,
+    "metadata": {
+        "kernelspec": {
+            "display_name": "Python 3",
+            "language": "python",
+            "name": "python3"
+        },
+        "language_info": {
+            "name": "python"
+        }
+    },
+    "nbformat": 4,
+    "nbformat_minor": 0
+}
 
 with open('notebooks/msmarco_xi_ingestion_colab.ipynb', 'w', encoding='utf-8') as f:
     json.dump(nb, f, indent=1)
 
-print("Notebook rewritten.")
+print("Notebook rewritten successfully.")
