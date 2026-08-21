@@ -30,13 +30,13 @@ BATCH_SIZE = 16
 
 RUN_ID = "vaani_ingestion"
 
-TARGET_TOTAL_VECTORS = 1_00_000
+TARGET_TOTAL_VECTORS = 200_000
 
 # Approximate multilingual distribution.
 LANGUAGE_TARGETS = {
-    "en": 333_333,
-    "hi": 333_333,
-    "mr": 333_334,
+    "en": 66_667,
+    "hi": 66_667,
+    "mr": 66_666,
 }
 
 
