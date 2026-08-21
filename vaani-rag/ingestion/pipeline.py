@@ -164,7 +164,7 @@ def run_pipeline(
     metrics.passages_extracted = lang_passage_counts
     metrics.unique_passages = lang_unique_counts
 
-    total_chunks = len(metrics.chunk_token_counts)
+    total_chunks = metrics.chunk_count
     
     # 3. Ingestion Scale & Cost Safety Estimation
     bytes_per_float = 4
