@@ -1,5 +1,6 @@
 import React from 'react';
 import Hero from './components/Hero';
+import GlassNavbar from './components/GlassNavbar';
 import VaaniIntro from './components/VaaniIntro';
 import HowVaaniThinks from './components/HowVaaniThinks';
 import Telemetry from './components/Telemetry';
@@ -12,6 +13,9 @@ function App() {
   return (
     <div className="w-full min-h-screen bg-[#1A2E20] font-sans selection:bg-[#A88647] selection:text-white">
       
+      {/* Glassmorphic Navbar for non-hero sections */}
+      <GlassNavbar />
+
       {/* 1. Full-screen lock-screen hero */}
       <Hero />
 

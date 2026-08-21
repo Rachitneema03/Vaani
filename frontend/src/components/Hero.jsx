@@ -12,70 +12,32 @@ export default function Hero() {
   const contentRef = useRef(null);
 
   useGSAP(() => {
-    // Reveal animation
-    const tl = gsap.timeline();
-    
-    tl.fromTo(bgRef.current, 
-      { opacity: 0, scale: 1.05 },
-      { opacity: 1, scale: 1, duration: 1.5, ease: 'power2.out' }
-    )
-    .fromTo('.hero-title', 
-      { opacity: 0, y: 20, scale: 0.96 },
-      { opacity: 1, y: 0, scale: 1, duration: 1, ease: 'power3.out' },
-      "-=0.8"
-    )
-    .fromTo('.hero-subtitle', 
-      { opacity: 0, y: 15 },
-      { opacity: 1, y: 0, duration: 0.8, ease: 'power2.out' },
-      "-=0.6"
-    )
-    .fromTo('.hero-btn', 
-      { opacity: 0, y: 10 },
-      { opacity: 1, y: 0, duration: 0.6, stagger: 0.1, ease: 'power2.out' },
-      "-=0.4"
-    )
-    .fromTo('.hero-deco', 
-      { opacity: 0, scale: 0.9 },
-      { opacity: 1, scale: 1, duration: 0.8, stagger: 0.2, ease: 'back.out(1.2)' },
-      "-=0.2"
-    );
-
-    // Lock screen scroll effect
-    ScrollTrigger.create({
-      trigger: container.current,
-      start: "top top",
-      end: "+=100%", // Pin for 1 viewport height
-      pin: true,
-      pinSpacing: false, // Allows next section to slide over
-      scrub: 1,
-      animation: gsap.timeline()
-        .to(contentRef.current, { y: -150, opacity: 0, ease: 'none' })
-        .to(bgRef.current, { y: -50, filter: 'brightness(0.7)', ease: 'none' }, 0)
+    // Slight downward parallax movement for video background when scrolling past hero
+    gsap.to(bgRef.current, {
+      y: 80,
+      ease: 'none',
+      scrollTrigger: {
+        trigger: container.current,
+        start: 'top top',
+        end: 'bottom top',
+        scrub: true,
+      }
     });
-
   }, { scope: container });
 
   return (
-    <section ref={container} className="relative w-full h-screen overflow-hidden flex flex-col z-0">
-      {/* Background */}
-      <div 
-        ref={bgRef}
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: 'url("/hero_bg_1787340490865.jpg")' }}
-      ></div>
+    <section ref={container} className="sticky top-0 w-full h-screen overflow-hidden flex flex-col z-0">
+      {/* Background Video (Streamable Embed) */}
+      <div ref={bgRef} className="absolute inset-0 overflow-hidden bg-black pointer-events-none">
+        <iframe
+          src="https://streamable.com/e/dgog55?autoplay=1&muted=1&nocontrols=1&loop=1"
+          className="absolute w-[180%] h-[180%] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 object-cover"
+          allow="autoplay; encrypted-media"
+          title="Hero Background Video"
+        />
+      </div>
 
-      {/* Navbar overlay */}
-      <nav className="relative z-10 w-full flex justify-between items-start p-6 md:p-10 font-sans text-xs uppercase tracking-[0.2em] font-medium text-white mix-blend-difference">
-        <div className="flex gap-8">
-          <a href="#" className="group flex items-center gap-2 hover:opacity-80 transition-opacity">
-            Go to Agent <span className="group-hover:translate-x-1 transition-transform">→</span>
-          </a>
-          <a href="#" className="hidden md:block hover:opacity-80 transition-opacity">Latency Info</a>
-          <a href="#" className="hidden md:block hover:opacity-80 transition-opacity">The Team</a>
-          <a href="#" className="hidden md:block hover:opacity-80 transition-opacity">Hackerhouse Goa</a>
-        </div>
-        <div className="font-serif text-2xl tracking-widest">VAANI AI</div>
-      </nav>
+
 
       {/* Main Content */}
       <div ref={contentRef} className="relative z-10 flex-1 flex flex-col items-center justify-center text-center px-4">
