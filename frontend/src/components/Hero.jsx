@@ -23,6 +23,26 @@ export default function Hero() {
         scrub: true,
       }
     });
+
+    // Mobile-only: Smoothly transition "VAANI AI" title to top-left corner as logo on scroll
+    const mm = gsap.matchMedia();
+    mm.add("(max-width: 767px)", () => {
+      gsap.to('.hero-title', {
+        x: '-28vw',
+        y: '-32vh',
+        scale: 0.32,
+        letterSpacing: '0.15em',
+        ease: 'power1.out',
+        scrollTrigger: {
+          trigger: container.current,
+          start: 'top top',
+          end: 'top -50%',
+          scrub: 0.5,
+        }
+      });
+    });
+
+    return () => mm.revert();
   }, { scope: container });
 
   return (
@@ -31,17 +51,15 @@ export default function Hero() {
       <div ref={bgRef} className="absolute inset-0 overflow-hidden bg-black pointer-events-none">
         <iframe
           src="https://streamable.com/e/dgog55?autoplay=1&muted=1&nocontrols=1&loop=1"
-          className="absolute w-[180%] h-[180%] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 object-cover"
+          className="absolute w-[340%] h-[180%] sm:w-[220%] md:w-[180%] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 object-cover"
           allow="autoplay; encrypted-media"
           title="Hero Background Video"
         />
       </div>
 
-
-
       {/* Main Content */}
-      <div ref={contentRef} className="relative z-10 flex-1 flex flex-col items-center justify-center text-center px-4">
-        <h1 className="hero-title font-serif text-6xl md:text-8xl lg:text-9xl text-white/90 drop-shadow-lg mb-6 tracking-tight" style={{ color: '#E8D5B5' }}>
+      <div ref={contentRef} className="relative z-10 flex-1 flex flex-col items-center justify-center text-center px-4 py-8">
+        <h1 className="hero-title font-serif text-5xl sm:text-7xl md:text-8xl lg:text-9xl text-white/90 drop-shadow-lg mb-4 sm:mb-6 tracking-tight" style={{ color: '#E8D5B5' }}>
           VAANI AI
         </h1>
         

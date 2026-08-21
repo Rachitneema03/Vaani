@@ -22,7 +22,7 @@ export default function GlassNavbar() {
   }, []);
 
   return (
-    <header className="fixed top-0 left-0 w-full z-50 pointer-events-none transition-all duration-700 ease-in-out">
+    <header className="hidden md:block fixed top-0 left-0 w-full z-50 pointer-events-none transition-all duration-700 ease-in-out">
       <div className="w-full flex justify-center p-4 md:p-6 transition-all duration-700 ease-in-out">
         <nav
           className={`pointer-events-auto transition-all duration-700 ease-in-out flex items-center justify-between font-sans uppercase tracking-[0.2em] font-medium ${

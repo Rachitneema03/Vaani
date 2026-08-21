@@ -216,12 +216,12 @@ export default function VaaniIntro() {
   };
 
   return (
-    <section id="vaani-intro" ref={container} className="relative w-full h-screen bg-[#FAF9F6] pt-24 z-10 shadow-[0_-10px_30px_rgba(0,0,0,0.1)] rounded-t-3xl flex items-center overflow-hidden">
-      <div className="container max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-center gap-12 md:gap-16 h-full pb-16 px-4">
+    <section id="vaani-intro" ref={container} className="relative w-full min-h-screen md:h-screen bg-[#FAF9F6] py-16 md:py-24 z-10 shadow-[0_-10px_30px_rgba(0,0,0,0.1)] rounded-t-3xl flex items-center overflow-hidden">
+      <div className="container max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-center gap-8 md:gap-16 h-full pb-8 md:pb-16 px-4">
         
         {/* LEFT: Voice Shader Container (Clickable Box) */}
-        <div className="intro-left relative w-full md:w-1/2 flex justify-center max-h-[420px]">
-          <div className="relative inline-block w-full max-w-[360px] md:max-w-[400px] aspect-square">
+        <div className="intro-left relative w-full md:w-1/2 flex justify-center max-h-[320px] sm:max-h-[380px] md:max-h-[420px]">
+          <div className="relative inline-block w-full max-w-[280px] sm:max-w-[340px] md:max-w-[400px] aspect-square">
             
             {/* Box Container for Shader */}
             <div 

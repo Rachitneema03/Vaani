@@ -40,7 +40,7 @@ export default function HowVaaniThinks() {
   }, { scope: container });
 
   return (
-    <div ref={container} className="col-span-12 lg:col-span-7 bg-[#F5F2EA] border-r border-[#E5DECC] p-8 md:p-12 relative overflow-hidden h-full flex flex-col justify-between">
+    <div ref={container} className="col-span-12 lg:col-span-7 bg-[#F5F2EA] lg:border-r border-b lg:border-b-0 border-[#E5DECC] p-6 sm:p-8 md:p-12 relative overflow-hidden h-full flex flex-col justify-between">
       
       <div>
         <h3 className="font-mono text-xl tracking-tight font-medium mb-1">HOW VAANI THINKS</h3>
