@@ -12,9 +12,9 @@ export default function Hero() {
   const contentRef = useRef(null);
 
   useGSAP(() => {
-    // Slight downward parallax movement for video background when scrolling past hero
-    gsap.to(bgRef.current, {
-      y: 80,
+    // Parallax effect for the entire hero section so the second section overlaps it
+    gsap.to(container.current, {
+      yPercent: 50,
       ease: 'none',
       scrollTrigger: {
         trigger: container.current,
@@ -46,24 +46,18 @@ export default function Hero() {
   }, { scope: container });
 
   return (
-    <section ref={container} className="sticky top-0 w-full h-screen overflow-hidden flex flex-col z-0">
-      {/* Background Video (Streamable Embed & Fallback) */}
+    <section ref={container} className="relative w-full h-screen overflow-hidden flex flex-col z-0">
+      {/* Background Video */}
       <div ref={bgRef} className="absolute inset-0 overflow-hidden bg-black pointer-events-none">
-        <iframe
-          src="https://streamable.com/e/dgog55?autoplay=1&muted=1&nocontrols=1&loop=1"
-          className="absolute w-[340%] h-[180%] sm:w-[220%] md:w-[180%] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 object-cover min-h-full min-w-full"
-          allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
-          title="Hero Background Video"
-        />
         <video
-          className="absolute inset-0 w-full h-full object-cover opacity-90 -z-10"
+          className="absolute inset-0 w-full h-full object-cover opacity-90"
           autoPlay
           loop
           muted
           playsInline
           webkit-playsinline="true"
         >
-          <source src="https://api-f.streamable.com/api/v1/videos/dgog55/mp4" type="video/mp4" />
+          <source src="https://res.cloudinary.com/dbg7xnr63/video/upload/v1787412202/IMG_0747_fgdr53.mp4" type="video/mp4" />
         </video>
       </div>
 
