@@ -12,9 +12,10 @@ export default function Hero() {
   const contentRef = useRef(null);
 
   useGSAP(() => {
-    // Parallax effect for the entire hero section so the second section overlaps it
-    gsap.to(container.current, {
-      yPercent: 50,
+    // Parallax effect for the background and content while the container stays sticky
+    gsap.to([bgRef.current, contentRef.current], {
+      y: 100, // Move them down slightly as you scroll
+      scale: 1.05, // Slight scale for parallax feel
       ease: 'none',
       scrollTrigger: {
         trigger: container.current,
@@ -46,7 +47,7 @@ export default function Hero() {
   }, { scope: container });
 
   return (
-    <section ref={container} className="relative w-full h-screen overflow-hidden flex flex-col z-0">
+    <section ref={container} className="sticky top-0 w-full h-[100dvh] overflow-hidden flex flex-col z-0">
       {/* Background Video */}
       <div ref={bgRef} className="absolute inset-0 overflow-hidden bg-black pointer-events-none">
         <video
