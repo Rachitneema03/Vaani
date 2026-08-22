@@ -1,17 +1,41 @@
-import React from 'react';
+import React, { Suspense, useEffect } from 'react';
+import Lenis from 'lenis';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Hero from './components/Hero';
 import GlassNavbar from './components/GlassNavbar';
 import MobileTopHeader from './components/MobileTopHeader';
-import VaaniIntro from './components/VaaniIntro';
-import HowVaaniThinks from './components/HowVaaniThinks';
-import Telemetry from './components/Telemetry';
-import ModelInfo from './components/ModelInfo';
-import TeamProcess from './components/TeamProcess';
-import Footer from './components/Footer';
 import { ExpandableTabs } from '@/components/ui/expandable-tabs';
 import './index.css';
 
+const VaaniIntro = React.lazy(() => import('./components/VaaniIntro'));
+const HowVaaniThinks = React.lazy(() => import('./components/HowVaaniThinks'));
+const Telemetry = React.lazy(() => import('./components/Telemetry'));
+const ModelInfo = React.lazy(() => import('./components/ModelInfo'));
+const TeamProcess = React.lazy(() => import('./components/TeamProcess'));
+const Footer = React.lazy(() => import('./components/Footer'));
+
+gsap.registerPlugin(ScrollTrigger);
+
 function App() {
+  useEffect(() => {
+    const lenis = new Lenis({
+      lerp: 0.1,
+      smoothWheel: true,
+    });
+
+    lenis.on('scroll', ScrollTrigger.update);
+
+    gsap.ticker.add((time) => {
+      lenis.raf(time * 1000);
+    });
+
+    gsap.ticker.lagSmoothing(0);
+
+    return () => {
+      lenis.destroy();
+    };
+  }, []);
   // Mobile expandable bottom navigation tabs with Bootstrap Icons
   const mobileTabs = [
     { title: "Home", icon: "bi bi-house-door-fill", href: "#" },
@@ -33,35 +57,37 @@ function App() {
       {/* 1. Full-screen lock-screen hero */}
       <Hero />
 
-      {/* 2. Intro Section (Slides up over hero on scroll) */}
-      <VaaniIntro />
+      <Suspense fallback={<div className="min-h-screen bg-[#1A2E20] w-full flex items-center justify-center text-[#E8D5B5] font-serif tracking-widest animate-pulse">LOADING VAANI...</div>}>
+        {/* 2. Intro Section (Slides up over hero on scroll) */}
+        <VaaniIntro />
 
-      {/* 3. Technical Section: Container for Pipeline, Telemetry, Model Info */}
-      <section id="telemetry-stats" className="w-full bg-[#1A2E20] py-16 relative z-10">
-        <div className="container max-w-[1400px] mx-auto px-4 md:px-8">
-          
-          {/* Inner Cream Container framing the technical bits */}
-          <div className="grid grid-cols-12 bg-[#F5F2EA] rounded-xl overflow-hidden shadow-2xl shadow-black/20 border-4 border-[#1A2E20]/50 outline outline-1 outline-[#DCD2BB] relative">
+        {/* 3. Technical Section: Container for Pipeline, Telemetry, Model Info */}
+        <section id="telemetry-stats" className="w-full bg-[#1A2E20] py-16 relative z-10">
+          <div className="container max-w-[1400px] mx-auto px-4 md:px-8">
             
-            {/* Pipeline (7 cols) */}
-            <HowVaaniThinks />
-            
-            {/* Telemetry (3 cols) */}
-            <Telemetry />
-            
-            {/* Model Info (2 cols) */}
-            <ModelInfo />
+            {/* Inner Cream Container framing the technical bits */}
+            <div className="grid grid-cols-12 bg-[#F5F2EA] rounded-xl overflow-hidden shadow-2xl shadow-black/20 border-4 border-[#1A2E20]/50 outline outline-1 outline-[#DCD2BB] relative">
+              
+              {/* Pipeline (7 cols) */}
+              <HowVaaniThinks />
+              
+              {/* Telemetry (3 cols) */}
+              <Telemetry />
+              
+              {/* Model Info (2 cols) */}
+              <ModelInfo />
+              
+            </div>
             
           </div>
-          
-        </div>
-      </section>
+        </section>
 
-      {/* 4. Team & Process */}
-      <TeamProcess />
+        {/* 4. Team & Process */}
+        <TeamProcess />
 
-      {/* 5. Footer */}
-      <Footer />
+        {/* 5. Footer */}
+        <Footer />
+      </Suspense>
 
       {/* Floating Full-Width Apple Glassmorphism Mobile Bottom Navigation Menu */}
       <div className="fixed bottom-6 inset-x-4 max-w-md mx-auto z-50 md:hidden pointer-events-auto">

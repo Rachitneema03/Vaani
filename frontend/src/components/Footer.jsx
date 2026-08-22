@@ -49,18 +49,17 @@ export default function Footer() {
             <ArrowRight className="w-8 h-8 opacity-60 group-hover:translate-x-2 group-hover:opacity-100 transition-all" strokeWidth={1} />
           </a>
           
-          <p className="font-sans text-white/60 text-sm max-w-sm mb-12">
-            It's a hackathon in goa that blah blah blah la di dah doosh doosh
-          </p>
+          <div className="font-sans text-white/60 text-sm max-w-sm mb-12 flex flex-col gap-2 md:items-end">
+            <p className="mb-2 tracking-wide">Task 2: <span className="font-bold text-[#E8D5B5]">#RaginGoa</span></p>
+            <a href="https://hhgoa.com/" target="_blank" rel="noreferrer" className="hover:text-white transition-colors underline decoration-white/30 underline-offset-4">
+              HH Goa Official Site
+            </a>
+            <a href="https://huggingface.co/datasets/ai4bharat/MSMARCO-XI" target="_blank" rel="noreferrer" className="hover:text-white transition-colors underline decoration-white/30 underline-offset-4 text-right">
+              Dataset: AI4Bharat MSMARCO-XI
+            </a>
+          </div>
 
-          <label className="flex items-center gap-3 cursor-pointer group">
-            <div className="w-4 h-4 border border-white/40 flex items-center justify-center group-hover:border-white transition-colors bg-black/20">
-              <input type="checkbox" className="opacity-0 absolute w-0 h-0" />
-            </div>
-            <span className="font-sans text-[10px] uppercase tracking-widest text-white/40 group-hover:text-white/80 transition-colors">
-              I AGREE TO THE PRIVACY POLICY
-            </span>
-          </label>
+
         </div>
 
       </div>
