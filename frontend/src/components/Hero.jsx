@@ -78,7 +78,7 @@ export default function Hero() {
           playsInline
           webkit-playsinline="true"
         >
-          <source src="https://res.cloudinary.com/dbg7xnr63/video/upload/v1787412202/IMG_0747_fgdr53.mp4" type="video/mp4" />
+          <source src="https://res.cloudinary.com/dbg7xnr63/video/upload/f_auto,q_auto/v1787412202/IMG_0747_fgdr53.mp4" type="video/mp4" />
         </video>
       </div>
 
