@@ -385,32 +385,6 @@ to:
 
 **"Let technology understand your language."**
 
-## 👥 Team Happy
-
-### About THE TEAM
-**Rachit Neema** 
-
-https://github.com/Rachitneema03
-
-**Yash Vyas**
-
-https://github.com/yashvyas101
-
-**Nirjara Jain**
-
-https://github.com/NirjaraJain29
-
-| 👤 Team Member   | 💻 Contribution             |
-| ---------------- | --------------------------- |
-| **Rachit Neema** |   Backend / Integration     |
-| **Yash Vyas**    |   AI / RAG & Backend        |
-| **Nirjara Jain** |    Frontend / UI            |
-
----
-
-<div align="center">
-
-### 🎙️ VAANI by Team Happy
 
 **Speak. Ask. Understand.**
 
