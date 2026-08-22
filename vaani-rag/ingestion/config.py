@@ -1,6 +1,7 @@
-# import os
-# from pathlib import Path
-# from dotenv import load_dotenv
+import os
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+from pathlib import Path
+from dotenv import load_dotenv
 
 # # Load environment variables from .env file
 # load_dotenv()
