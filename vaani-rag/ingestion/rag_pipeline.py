@@ -65,7 +65,7 @@ class RAGBaselinePipeline:
             embedder=self.embedder,
             collection_name=collection_name,
         )
-        self.model_name = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+        self.model_name = os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
         self.reranker = reranker
         
         # Initialize Google GenAI client
